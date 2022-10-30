@@ -15,6 +15,14 @@ pub struct ActionWithMeta<Action> {
 }
 
 impl<Action> ActionWithMeta<Action> {
+    pub fn meta(&self) -> &ActionMeta {
+        &self.meta
+    }
+
+    pub fn action(&self) -> &Action {
+        &self.action
+    }
+
     #[inline(always)]
     pub fn id(&self) -> ActionId {
         self.meta.id()
@@ -24,10 +32,6 @@ impl<Action> ActionWithMeta<Action> {
     #[inline(always)]
     pub fn depth(&self) -> RecursionDepth {
         self.meta.depth()
-    }
-
-    pub fn action(&self) -> &Action {
-        &self.action
     }
 
     #[inline(always)]
