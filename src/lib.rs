@@ -1,7 +1,7 @@
 #![cfg_attr(feature = "fuzzing", feature(no_coverage))]
 
 mod timestamp;
-pub use timestamp::Timestamp;
+pub use timestamp::{Instant, SystemTime, Timestamp};
 
 mod action;
 pub use action::*;

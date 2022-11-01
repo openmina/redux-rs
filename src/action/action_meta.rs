@@ -1,6 +1,6 @@
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
-use crate::Timestamp;
+use crate::{SystemTime, Timestamp};
 
 use super::{ActionId, ActionWithMeta};
 

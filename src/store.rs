@@ -1,7 +1,6 @@
-use std::time::{Instant, SystemTime};
-
 use crate::{
-    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Reducer, TimeService,
+    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
+    TimeService,
 };
 
 /// Wraps around State and allows only immutable borrow,

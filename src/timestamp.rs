@@ -1,4 +1,8 @@
 use std::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
+pub use std::time::{Instant, SystemTime};
+#[cfg(target_arch = "wasm32")]
+pub use wasm_timer::{Instant, SystemTime};
 
 /// Time in nanoseconds from [std::time::UNIX_EPOCH].
 ///
