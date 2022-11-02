@@ -16,6 +16,11 @@ pub struct ActionMeta {
 }
 
 impl ActionMeta {
+    pub const ZERO: Self = Self {
+        id: ActionId::ZERO,
+        depth: 0,
+    };
+
     #[inline(always)]
     pub(crate) fn new(id: ActionId, depth: RecursionDepth) -> Self {
         Self { id, depth }
