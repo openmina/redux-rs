@@ -17,3 +17,6 @@ pub use service::{Service, TimeService};
 
 mod store;
 pub use store::Store;
+
+mod sub_store;
+pub use sub_store::SubStore;
