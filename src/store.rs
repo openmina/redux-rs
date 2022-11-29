@@ -133,6 +133,33 @@ where
             return false;
         }
 
+        self.dispatch_enabled(action.into());
+
+        true
+    }
+
+    /// Dispatch an Action (For `SubStore`).
+    ///
+    /// Returns `true` if the action was enabled, hence if it was dispatched
+    /// to reducer and then effects.
+    ///
+    /// If action is not enabled, we return false and do nothing.
+    pub fn sub_dispatch<SubAction, A>(&mut self, action: A) -> bool
+    where
+        A: Into<SubAction> + EnablingCondition<State>,
+        SubAction: Into<Action>,
+    {
+        if !action.is_enabled(self.state()) {
+            return false;
+        }
+
+        self.dispatch_enabled(action.into().into());
+
+        true
+    }
+
+    /// Dispatches action without checking the enabling condition.
+    fn dispatch_enabled(&mut self, action: Action) {
         let monotonic_time = self.service.monotonic_time();
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
@@ -142,15 +169,13 @@ where
         self.last_action_id = self.last_action_id.next(time_passed as u64);
 
         let action_with_meta =
-            ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action.into());
+            ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action);
         self.recursion_depth += 1;
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
 
         self.recursion_depth -= 1;
-
-        true
     }
 
     /// Runs the reducer.
