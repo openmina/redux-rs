@@ -47,6 +47,7 @@ pub(crate) fn monotonic_time() -> Instant {
 }
 
 
+/// Converts monotonic time to nanoseconds since Unix epoch.
 pub fn monotonic_to_time(time: Instant) -> u64 {
     let (monotonic, system) = INITIAL_TIME.get_or_init(|| {
         (monotonic_time(), SystemTime::now())
