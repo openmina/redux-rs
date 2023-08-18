@@ -4,7 +4,7 @@ pub use std::time::{Instant, SystemTime};
 #[cfg(target_arch = "wasm32")]
 pub use wasm_timer::{Instant, SystemTime};
 
-use crate::{monotonic_to_time, store::monotonic_time};
+use crate::monotonic_to_time;
 
 /// Time in nanoseconds from [std::time::UNIX_EPOCH].
 ///
@@ -33,8 +33,8 @@ impl Timestamp {
     }
 
     #[inline(always)]
-    pub fn now() -> Self {
-        Timestamp::new(monotonic_to_time(monotonic_time()))
+    pub fn global_now() -> Self {
+        Timestamp::new(monotonic_to_time(Instant::now()))
     }
 
     pub fn checked_sub(self, rhs: Timestamp) -> Option<Duration> {

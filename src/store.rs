@@ -41,17 +41,9 @@ impl<T: Clone> Clone for StateWrapper<T> {
 /// Monotonic and system time reference points.
 static INITIAL_TIME: OnceLock<(Instant, SystemTime)> = OnceLock::new();
 
-/// Monotonic timer current value
-pub(crate) fn monotonic_time() -> Instant {
-    Instant::now()
-}
-
-
 /// Converts monotonic time to nanoseconds since Unix epoch.
 pub fn monotonic_to_time(time: Instant) -> u64 {
-    let (monotonic, system) = INITIAL_TIME.get_or_init(|| {
-        (monotonic_time(), SystemTime::now())
-    });
+    let (monotonic, system) = INITIAL_TIME.get_or_init(|| (Instant::now(), SystemTime::now()));
     let time_passed = time.duration_since(*monotonic);
     system
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -93,15 +85,17 @@ where
     pub fn new(
         reducer: Reducer<State, Action>,
         effects: Effects<State, Service, Action>,
-        service: Service,
+        mut service: Service,
         initial_time: SystemTime,
         initial_state: State,
     ) -> Self {
-        let initial_monotonic_time = monotonic_time();
+        let initial_monotonic_time = service.monotonic_time();
         let initial_time_nanos = initial_time
             .duration_since(SystemTime::UNIX_EPOCH)
             .map(|x| x.as_nanos())
             .unwrap_or(0);
+
+        INITIAL_TIME.get_or_init(move || (initial_monotonic_time, initial_time));
 
         Self {
             reducer,
@@ -175,7 +169,7 @@ where
 
     /// Dispatches action without checking the enabling condition.
     fn dispatch_enabled(&mut self, action: Action) {
-        let monotonic_time = monotonic_time();
+        let monotonic_time = self.service.monotonic_time();
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
             .as_nanos();

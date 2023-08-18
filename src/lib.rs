@@ -16,7 +16,7 @@ mod service;
 pub use service::{Service, TimeService};
 
 mod store;
-pub use store::{Store, monotonic_to_time};
+pub use store::{monotonic_to_time, Store};
 
 mod sub_store;
 pub use sub_store::SubStore;

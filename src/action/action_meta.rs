@@ -7,7 +7,7 @@ use super::{ActionId, ActionWithMeta};
 pub type RecursionDepth = u32;
 
 /// Action with additional metadata like: id.
-#[derive(Debug, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionMeta {
     id: ActionId,
@@ -24,6 +24,14 @@ impl ActionMeta {
     #[inline(always)]
     pub(crate) fn new(id: ActionId, depth: RecursionDepth) -> Self {
         Self { id, depth }
+    }
+
+    #[inline(always)]
+    pub fn zero_custom(time: Timestamp) -> Self {
+        Self {
+            id: ActionId::new_unchecked(time.into()),
+            depth: 0,
+        }
     }
 
     #[inline(always)]
