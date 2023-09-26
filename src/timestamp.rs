@@ -48,6 +48,12 @@ impl From<Timestamp> for u64 {
     }
 }
 
+impl From<Timestamp> for SystemTime {
+    fn from(value: Timestamp) -> Self {
+        Self::UNIX_EPOCH + Duration::from_nanos(value.into())
+    }
+}
+
 impl std::ops::Add for Timestamp {
     type Output = Timestamp;
     #[inline]
