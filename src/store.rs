@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use crate::{
     ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
-    TimeService,
+    TimeService, SubStore,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -154,9 +154,11 @@ where
     /// If action is not enabled, we return false and do nothing.
     pub fn sub_dispatch<A, S>(&mut self, action: A) -> bool
     where
-        A: Into<Action> + EnablingCondition<State>,
+        A: Into<<Self as SubStore<State, S>>::SubAction> + EnablingCondition<S>,
+        <Self as SubStore<State, S>>::SubAction: Into<Action>,
+        Self: SubStore<State, S>,
     {
-        if !action.is_enabled_with_time(self.state(), self.last_action_id.into()) {
+        if !action.is_enabled_with_time(<Self as SubStore<State, S>>::state(self), self.last_action_id.into()) {
             return false;
         }
         self.dispatch_enabled(action.into().into());
