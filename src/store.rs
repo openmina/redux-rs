@@ -138,10 +138,9 @@ where
     where
         T: Into<Action> + EnablingCondition<State>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled_with_time(self.state(), self.last_action_id.into()) {
             return false;
         }
-
         self.dispatch_enabled(action.into());
 
         true
@@ -153,15 +152,13 @@ where
     /// to reducer and then effects.
     ///
     /// If action is not enabled, we return false and do nothing.
-    pub fn sub_dispatch<SubAction, A>(&mut self, action: A) -> bool
+    pub fn sub_dispatch<A, S>(&mut self, action: A) -> bool
     where
-        A: Into<SubAction> + EnablingCondition<State>,
-        SubAction: Into<Action>,
+        A: Into<Action> + EnablingCondition<State>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled_with_time(self.state(), self.last_action_id.into()) {
             return false;
         }
-
         self.dispatch_enabled(action.into().into());
 
         true
@@ -173,13 +170,11 @@ where
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
             .as_nanos();
-
-        self.monotonic_time = monotonic_time;
         self.last_action_id = self.last_action_id.next(time_passed as u64);
+        self.recursion_depth += 1;
 
         let action_with_meta =
             ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action);
-        self.recursion_depth += 1;
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
