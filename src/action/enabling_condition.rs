@@ -7,4 +7,3 @@ pub trait EnablingCondition<State> {
         true
     }
 }
-
