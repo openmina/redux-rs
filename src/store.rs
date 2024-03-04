@@ -172,11 +172,12 @@ where
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
             .as_nanos();
-        self.last_action_id = self.last_action_id.next(time_passed as u64);
+        let prev = self.last_action_id;
+        self.last_action_id = prev.next(time_passed as u64);
         self.recursion_depth += 1;
 
         let action_with_meta =
-            ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action);
+            ActionMeta::new(self.last_action_id, prev, self.recursion_depth).with_action(action);
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
