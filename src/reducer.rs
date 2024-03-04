@@ -1,9 +1,9 @@
-use crate::{action_queue::ActionQueue, ActionWithMeta, Store};
+use crate::{action_queue::ActionQueue, ActionWithMeta};
 
 /// Function signature for a reducer.
-pub type Reducer<State, Service, Action> = fn(
+pub type Reducer<State, Action> = fn(
     &mut State,
     &ActionWithMeta<Action>,
-    &Store<State, Service, Action>,
+    &State,
     &mut ActionQueue<Action, State>,
 );
