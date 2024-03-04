@@ -138,7 +138,7 @@ where
     where
         T: Into<Action> + EnablingCondition<State>,
     {
-        if !action.is_enabled_with_time(self.state(), self.last_action_id.into()) {
+        if !action.is_enabled(self.state(), self.last_action_id.into()) {
             return false;
         }
         self.dispatch_enabled(action.into());
@@ -158,7 +158,7 @@ where
         <Self as SubStore<State, S>>::SubAction: Into<Action>,
         Self: SubStore<State, S>,
     {
-        if !action.is_enabled_with_time(<Self as SubStore<State, S>>::state(self), self.last_action_id.into()) {
+        if !action.is_enabled(<Self as SubStore<State, S>>::state(self), self.last_action_id.into()) {
             return false;
         }
         self.dispatch_enabled(action.into().into());
