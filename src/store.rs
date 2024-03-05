@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use crate::{
-    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
-    TimeService, SubStore,
+    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SubStore,
+    SystemTime, TimeService,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -158,7 +158,10 @@ where
         <Self as SubStore<State, S>>::SubAction: Into<Action>,
         Self: SubStore<State, S>,
     {
-        if !action.is_enabled(<Self as SubStore<State, S>>::state(self), self.last_action_id.into()) {
+        if !action.is_enabled(
+            <Self as SubStore<State, S>>::state(self),
+            self.last_action_id.into(),
+        ) {
             return false;
         }
         self.dispatch_enabled(action.into().into());
@@ -172,12 +175,16 @@ where
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
             .as_nanos();
+        self.monotonic_time = monotonic_time;
+
         let prev = self.last_action_id;
-        self.last_action_id = prev.next(time_passed as u64);
-        self.recursion_depth += 1;
+        let curr = prev.next(time_passed as u64);
 
         let action_with_meta =
-            ActionMeta::new(self.last_action_id, prev, self.recursion_depth).with_action(action);
+            ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
+
+        self.last_action_id = curr;
+        self.recursion_depth += 1;
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
