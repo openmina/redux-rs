@@ -10,5 +10,5 @@ pub trait SubStore<GlobalState, SubState> {
     fn state_and_service(&mut self) -> (&SubState, &mut Self::Service);
     fn dispatch<A>(&mut self, action: A) -> bool
     where
-        A: Into<Self::SubAction> + crate::EnablingCondition<GlobalState>;
+        A: Into<Self::SubAction> + crate::EnablingCondition<SubState>;
 }
