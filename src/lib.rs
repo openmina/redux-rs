@@ -23,6 +23,3 @@ pub use sub_store::SubStore;
 
 mod dispatcher;
 pub use dispatcher::Dispatcher;
-
-mod substate;
-pub use substate::{Substate, SubstateAccess};
