@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use crate::{
-    ActionId, ActionMeta, ActionWithMeta, Dispatcher, Effects, EnablingCondition, Instant, Reducer,
-    SubStore, SystemTime, TimeService,
+    ActionId, ActionMeta, ActionWithMeta, AnyAction, Callback, Dispatcher, Effects,
+    EnablingCondition, Instant, Reducer, SubStore, SystemTime, TimeService,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -150,6 +150,15 @@ where
         self.dispatch_enabled(action.into());
 
         true
+    }
+
+    pub fn dispatch_callback<T>(&mut self, callback: Callback<T>, args: T) -> bool
+    where
+        T: 'static,
+        Action: From<AnyAction> + EnablingCondition<State>,
+    {
+        let action: Action = callback.call(args);
+        self.dispatch(action)
     }
 
     /// Dispatch an Action (For `SubStore`).
