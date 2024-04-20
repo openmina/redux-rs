@@ -15,6 +15,9 @@ pub use effects::Effects;
 mod service;
 pub use service::{Service, TimeService};
 
+mod callback;
+pub use callback::{gensym, paste, AnyAction, Callback, CALLBACKS};
+
 mod store;
 pub use store::{monotonic_to_time, Store};
 
