@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
-use crate::{AnyAction, Callback};
+use crate::{AnyAction, Callback, EnablingCondition};
 
 pub struct Dispatcher<Action, State> {
     queue: VecDeque<Action>,
@@ -23,6 +23,18 @@ where
         T: Into<Action>,
     {
         self.queue.push_back(action.into());
+    }
+
+    pub fn push_if_enabled<T>(&mut self, action: T, state: &State, time: crate::Timestamp) -> bool
+    where
+        T: Into<Action> + EnablingCondition<State>,
+    {
+        if action.is_enabled(state, time) {
+            self.queue.push_back(action.into());
+            true
+        } else {
+            false
+        }
     }
 
     pub fn push_callback<T>(&mut self, callback: Callback<T>, args: T)
