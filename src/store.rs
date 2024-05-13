@@ -180,11 +180,11 @@ where
         let prev = self.last_action_id;
         let curr = prev.next(time_passed as u64);
 
-        let action_with_meta =
-            ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
-
         self.last_action_id = curr;
         self.recursion_depth += 1;
+
+        let action_with_meta =
+            ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
