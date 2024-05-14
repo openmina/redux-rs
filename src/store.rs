@@ -59,7 +59,7 @@ pub fn monotonic_to_time(time: Instant) -> u64 {
 /// 1. [Reducer](redux::Reducer) - to update the state.
 /// 2. [Effects](redux::Effects) - to trigger side-effects of the action.
 pub struct Store<State, Service, Action> {
-    reducer: Reducer<State, Action>,
+    reducer: Reducer<State, Service, Action>,
     effects: Effects<State, Service, Action>,
 
     /// Current State.
@@ -87,7 +87,7 @@ where
 {
     /// Creates a new store.
     pub fn new(
-        reducer: Reducer<State, Action>,
+        reducer: Reducer<State, Service, Action>,
         effects: Effects<State, Service, Action>,
         mut service: Service,
         initial_time: SystemTime,
@@ -213,7 +213,12 @@ where
     fn dispatch_reducer(&mut self, action_with_id: &ActionWithMeta<Action>) {
         // All new queued elements will be stored here
         let mut queue = Dispatcher::new();
-        (self.reducer)(self.state.get_mut(), action_with_id, &mut queue);
+        (self.reducer)(
+            self.state.get_mut(),
+            action_with_id,
+            &mut self.service,
+            &mut queue,
+        );
 
         // All the enqueued actions gets pushed to the front of the global queue
         self.dispatch_queue.push_front(queue);
