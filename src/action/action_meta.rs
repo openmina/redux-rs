@@ -11,6 +11,8 @@ pub type RecursionDepth = u32;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionMeta {
     id: ActionId,
+    /// Previously applied action.
+    prev: ActionId,
     /// Recursion depth of a given action.
     depth: RecursionDepth,
 }
@@ -18,18 +20,20 @@ pub struct ActionMeta {
 impl ActionMeta {
     pub const ZERO: Self = Self {
         id: ActionId::ZERO,
+        prev: ActionId::ZERO,
         depth: 0,
     };
 
     #[inline(always)]
-    pub(crate) fn new(id: ActionId, depth: RecursionDepth) -> Self {
-        Self { id, depth }
+    pub(crate) fn new(id: ActionId, prev: ActionId, depth: RecursionDepth) -> Self {
+        Self { id, prev, depth }
     }
 
     #[inline(always)]
     pub fn zero_custom(time: Timestamp) -> Self {
         Self {
             id: ActionId::new_unchecked(time.into()),
+            prev: ActionId::new_unchecked(time.into()),
             depth: 0,
         }
     }
@@ -43,6 +47,12 @@ impl ActionMeta {
     #[inline(always)]
     pub fn depth(&self) -> RecursionDepth {
         self.depth
+    }
+
+    /// Time of previously applied action.
+    #[inline(always)]
+    pub fn prev_time(&self) -> Timestamp {
+        self.prev.into()
     }
 
     #[inline(always)]

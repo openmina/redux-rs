@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use crate::{
-    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
-    TimeService,
+    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SubStore,
+    SystemTime, TimeService,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -138,10 +138,9 @@ where
     where
         T: Into<Action> + EnablingCondition<State>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled(self.state(), self.last_action_id.into()) {
             return false;
         }
-
         self.dispatch_enabled(action.into());
 
         true
@@ -153,15 +152,18 @@ where
     /// to reducer and then effects.
     ///
     /// If action is not enabled, we return false and do nothing.
-    pub fn sub_dispatch<SubAction, A>(&mut self, action: A) -> bool
+    pub fn sub_dispatch<A, S>(&mut self, action: A) -> bool
     where
-        A: Into<SubAction> + EnablingCondition<State>,
-        SubAction: Into<Action>,
+        A: Into<<Self as SubStore<State, S>>::SubAction> + EnablingCondition<S>,
+        <Self as SubStore<State, S>>::SubAction: Into<Action>,
+        Self: SubStore<State, S>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled(
+            <Self as SubStore<State, S>>::state(self),
+            self.last_action_id.into(),
+        ) {
             return false;
         }
-
         self.dispatch_enabled(action.into().into());
 
         true
@@ -173,13 +175,16 @@ where
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
             .as_nanos();
-
         self.monotonic_time = monotonic_time;
-        self.last_action_id = self.last_action_id.next(time_passed as u64);
+
+        let prev = self.last_action_id;
+        let curr = prev.next(time_passed as u64);
+
+        self.last_action_id = curr;
+        self.recursion_depth += 1;
 
         let action_with_meta =
-            ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action);
-        self.recursion_depth += 1;
+            ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(action_with_meta);
