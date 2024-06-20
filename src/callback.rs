@@ -1,11 +1,15 @@
 pub use gensym;
+
+#[cfg(feature = "serializable_callbacks")]
 use linkme::distributed_slice;
+
 pub use paste;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 pub struct AnyAction(pub Box<dyn std::any::Any>);
 
+#[cfg(feature = "serializable_callbacks")]
 #[distributed_slice]
 pub static CALLBACKS: [(&str, fn(&str, Box<dyn std::any::Any>) -> AnyAction)];
 
@@ -36,22 +40,30 @@ impl<T: 'static> Callback<T> {
             return fun(args).into();
         }
 
-        // We reach this point only when the callback was deserialized
-        for (name, fun) in CALLBACKS {
-            if name == &self.fun_name {
-                return fun(std::any::type_name::<T>(), Box::new(args)).into();
-            }
-        }
+        #[cfg(not(feature = "serializable_callbacks"))]
+        unimplemented!();
 
-        panic!("callback function {} not found", self.fun_name)
+        #[cfg(feature = "serializable_callbacks")]
+        {
+            // We reach this point only when the callback was deserialized
+            for (name, fun) in CALLBACKS {
+                if name == &self.fun_name {
+                    return fun(std::any::type_name::<T>(), Box::new(args)).into();
+                }
+            }
+
+            panic!("callback function {} not found", self.fun_name)
+        }
     }
 }
 
 #[macro_export]
 macro_rules! _callback {
     ($gensym:ident, $action_ty:ty, $arg:tt, $arg_type:ty, $body:expr) => {{
-        use $crate::{AnyAction, Callback, CALLBACKS};
-        use linkme::distributed_slice;
+        use $crate::{AnyAction, Callback};
+
+        #[cfg(feature = "serializable_callbacks")]
+        use {$crate::CALLBACKS, linkme::distributed_slice};
 
         redux::paste::paste! {
             #[allow(unused)] // $arg is marked as unused, but it's used in `$body`
@@ -61,11 +73,14 @@ macro_rules! _callback {
             }
 
             fn $gensym(call_type: &str, args: Box<dyn std::any::Any>) -> AnyAction {
-                #[distributed_slice(CALLBACKS)]
-                static CALLBACK_DESERIALIZE: (&str, fn(&str, Box<dyn std::any::Any>) -> AnyAction) = (
-                    stringify!($gensym),
-                    $gensym,
-                );
+                #[cfg(feature = "serializable_callbacks")]
+                {
+                    #[distributed_slice(CALLBACKS)]
+                    static CALLBACK_DESERIALIZE: (&str, fn(&str, Box<dyn std::any::Any>) -> AnyAction) = (
+                        stringify!($gensym),
+                        $gensym,
+                    );
+                }
 
                 let $arg = *args.downcast::<$arg_type>()
                     .expect(&format!(
