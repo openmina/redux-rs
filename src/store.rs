@@ -75,9 +75,6 @@ pub struct Store<State, Service, Action> {
     recursion_depth: u32,
 
     last_action_id: ActionId,
-
-    /// Queue for actions to be dispatched after the state update
-    dispatch_queue: Dispatcher<Action, State>,
 }
 
 impl<State, Service, Action> Store<State, Service, Action>
@@ -113,8 +110,6 @@ where
 
             recursion_depth: 0,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
-
-            dispatch_queue: Dispatcher::new(),
         }
     }
 
@@ -201,32 +196,35 @@ where
         let action_with_meta =
             ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
 
-        // TODO: instead return queued actions and pass them to dispatch_effects?
-        self.dispatch_reducer(&action_with_meta);
-        self.dispatch_effects(action_with_meta);
+        let mut dispatcher = Dispatcher::new();
+        self.dispatch_reducer(&action_with_meta, &mut dispatcher);
+        self.dispatch_effects(action_with_meta, dispatcher);
 
         self.recursion_depth -= 1;
     }
 
     /// Runs the reducer.
     #[inline(always)]
-    fn dispatch_reducer(&mut self, action_with_id: &ActionWithMeta<Action>) {
-        // All new queued elements will be stored here
-        let mut queue = Dispatcher::new();
-        (self.reducer)(self.state.get_mut(), action_with_id, &mut queue);
-
-        // All the enqueued actions gets pushed to the front of the global queue
-        self.dispatch_queue.push_front(queue);
+    fn dispatch_reducer(
+        &mut self,
+        action_with_id: &ActionWithMeta<Action>,
+        dispatcher: &mut Dispatcher<Action, State>,
+    ) {
+        (self.reducer)(self.state.get_mut(), action_with_id, dispatcher);
     }
 
     /// Runs the effects.
     #[inline(always)]
-    fn dispatch_effects(&mut self, action_with_id: ActionWithMeta<Action>) {
+    fn dispatch_effects(
+        &mut self,
+        action_with_id: ActionWithMeta<Action>,
+        mut queued: Dispatcher<Action, State>,
+    ) {
         // First the effects for this specific action must be handled
         (self.effects)(self, action_with_id);
 
         // Then dispatch all actions enqueued by the reducer
-        while let Some(action) = self.dispatch_queue.pop() {
+        while let Some(action) = queued.pop() {
             if action.is_enabled(self.state(), self.last_action_id.into()) {
                 self.dispatch_enabled(action);
             }
@@ -251,8 +249,6 @@ where
 
             recursion_depth: self.recursion_depth,
             last_action_id: self.last_action_id,
-
-            dispatch_queue: Dispatcher::new(), // TODO: clone
         }
     }
 }

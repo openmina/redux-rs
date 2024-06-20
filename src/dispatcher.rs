@@ -49,12 +49,4 @@ where
     pub(crate) fn pop(&mut self) -> Option<Action> {
         self.queue.pop_front()
     }
-
-    pub(crate) fn push_front(&mut self, other: Dispatcher<Action, State>) {
-        other
-            .queue
-            .into_iter()
-            .rev()
-            .for_each(|action| self.queue.push_front(action));
-    }
 }
