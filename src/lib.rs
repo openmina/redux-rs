@@ -16,7 +16,7 @@ mod service;
 pub use service::{Service, TimeService};
 
 mod callback;
-pub use callback::{gensym, paste, AnyAction, Callback};
+pub use callback::{paste, AnyAction, Callback};
 #[cfg(feature = "serializable_callbacks")]
 pub use callback::CALLBACKS;
 
