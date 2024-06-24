@@ -8,7 +8,6 @@ license = "Apache-2.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 fuzzcheck = { git = "https://github.com/openmina/fuzzcheck-rs.git", optional = true }
 enum_dispatch = "0.3.7"
-gensym = "0.1.1"
 linkme = { version = "0.3.22", optional = true }
 paste = "1.0.14"
 

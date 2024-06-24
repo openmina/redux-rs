@@ -1,5 +1,3 @@
-pub use gensym;
-
 #[cfg(feature = "serializable_callbacks")]
 use linkme::distributed_slice;
 
@@ -59,7 +57,7 @@ impl<T: 'static> Callback<T> {
 
 #[macro_export]
 macro_rules! _callback {
-    ($gensym:ident, $action_ty:ty, $arg:tt, $arg_type:ty, $body:expr) => {{
+    ($callback_name:ident, $action_ty:ty, $arg:tt, $arg_type:ty, $body:expr) => {{
         use $crate::{AnyAction, Callback};
 
         #[cfg(feature = "serializable_callbacks")]
@@ -72,13 +70,13 @@ macro_rules! _callback {
                 AnyAction(Box::new(action))
             }
 
-            fn $gensym(call_type: &str, args: Box<dyn std::any::Any>) -> AnyAction {
+            fn $callback_name(call_type: &str, args: Box<dyn std::any::Any>) -> AnyAction {
                 #[cfg(feature = "serializable_callbacks")]
                 {
                     #[distributed_slice(CALLBACKS)]
                     static CALLBACK_DESERIALIZE: (&str, fn(&str, Box<dyn std::any::Any>) -> AnyAction) = (
-                        stringify!($gensym),
-                        $gensym,
+                        stringify!($callback_name),
+                        $callback_name,
                     );
                 }
 
@@ -92,16 +90,31 @@ macro_rules! _callback {
             }
         }
 
-        Callback::new(stringify!($gensym), convert_impl)
+        Callback::new(stringify!($callback_name), convert_impl)
     }};
 }
 
+/// Creates a callback instance. Must accept a single argument, so `()`
+/// should be used when no arguments are needed and tuples where
+/// more than one value need to be passed.
+///
+/// # Example
+///
+/// ```ignore
+/// callback!(task_done_callback(result: String) -> Action {
+///     SomeAction { result }
+/// })
+///
+/// callback!(multiple_arguments_callback((arg1: u64, arg2: u64)) -> Action {
+///     MultipleArgumentsAction { value: arg1 + arg2 }
+/// })
+/// ```
 #[macro_export]
 macro_rules! callback {
-    (|($($var:ident : $typ:ty),+)| -> $action_ty:ty $body:block) => {
-        $crate::gensym::gensym! { $crate::_callback!($action_ty, ($($var),+), ($($typ),+), $body) }
+    ($callback_name:ident(($($var:ident : $typ:ty),+)) -> $action_ty:ty $body:block) => {
+        $crate::_callback!($callback_name, $action_ty, ($($var),+), ($($typ),+), $body)
     };
-    (|$var:ident : $typ:ty| -> $action_ty:ty $body:block) => {
-        $crate::gensym::gensym! { $crate::_callback!($action_ty, $var, $typ, $body) }
+    ($callback_name:ident($var:ident : $typ:ty) -> $action_ty:ty $body:block) => {
+        $crate::_callback!($callback_name, $action_ty, $var, $typ, $body)
     };
 }
