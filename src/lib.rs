@@ -16,12 +16,13 @@ mod service;
 pub use service::{Service, TimeService};
 
 mod callback;
-pub use callback::{paste, AnyAction, Callback};
 #[cfg(feature = "serializable_callbacks")]
 pub use callback::CALLBACKS;
+pub use callback::{paste, AnyAction, Callback};
 
 mod store;
-pub use store::{monotonic_to_time, Store};
+pub(crate) use store::monotonic_to_time;
+pub use store::Store;
 
 mod sub_store;
 pub use sub_store::SubStore;

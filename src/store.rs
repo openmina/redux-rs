@@ -42,9 +42,11 @@ impl<T: Clone> Clone for StateWrapper<T> {
 static INITIAL_TIME: OnceLock<(Instant, SystemTime)> = OnceLock::new();
 
 /// Converts monotonic time to nanoseconds since Unix epoch.
-pub fn monotonic_to_time(time: Instant) -> u64 {
+///
+/// If `None` passed, returns result for current time.
+pub fn monotonic_to_time(time: Option<Instant>) -> u64 {
     let (monotonic, system) = INITIAL_TIME.get_or_init(|| (Instant::now(), SystemTime::now()));
-    let time_passed = time.duration_since(*monotonic);
+    let time_passed = time.unwrap_or_else(Instant::now).duration_since(*monotonic);
     system
         .duration_since(SystemTime::UNIX_EPOCH)
         .map(|x| x + time_passed)
@@ -126,7 +128,7 @@ where
 
     /// Convert monotonic time to system clock in nanoseconds from epoch.
     pub fn monotonic_to_time(&self, monotonic_time: Instant) -> u64 {
-        monotonic_to_time(monotonic_time)
+        monotonic_to_time(Some(monotonic_time))
     }
 
     /// Dispatch an Action.
