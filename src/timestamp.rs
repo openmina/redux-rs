@@ -70,3 +70,11 @@ impl std::ops::Add<u64> for Timestamp {
         Timestamp(self.0 + other)
     }
 }
+
+impl std::ops::Add<Duration> for Timestamp {
+    type Output = Timestamp;
+    #[inline]
+    fn add(self, other: Duration) -> Timestamp {
+        Timestamp(self.0 + other.as_nanos() as u64)
+    }
+}

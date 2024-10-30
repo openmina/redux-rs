@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use crate::{
     ActionId, ActionMeta, ActionWithMeta, AnyAction, Callback, Dispatcher, Effects,
-    EnablingCondition, Instant, Reducer, SubStore, SystemTime, TimeService,
+    EnablingCondition, Instant, Reducer, SubStore, SystemTime, TimeService, Timestamp,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -71,7 +71,8 @@ pub struct Store<State, Service, Action> {
     pub state: StateWrapper<State>,
     pub service: Service,
 
-    monotonic_time: Instant,
+    initial_monotonic_time: Instant,
+    initial_time: Timestamp,
 
     /// Current recursion depth of dispatch.
     recursion_depth: u32,
@@ -108,7 +109,8 @@ where
                 inner: initial_state,
             },
 
-            monotonic_time: initial_monotonic_time,
+            initial_monotonic_time,
+            initial_time: Timestamp::new(initial_time_nanos as u64),
 
             recursion_depth: 0,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
@@ -181,22 +183,26 @@ where
         true
     }
 
+    fn update_action_id(&mut self) -> ActionId {
+        let prev_action_id = self.last_action_id;
+        let now = self.initial_time
+            + self
+                .service
+                .monotonic_time()
+                .duration_since(self.initial_monotonic_time);
+
+        let t = (Timestamp::from(prev_action_id) + 1).max(now);
+        self.last_action_id = ActionId::new_unchecked(t.into());
+        prev_action_id
+    }
+
     /// Dispatches action without checking the enabling condition.
     fn dispatch_enabled(&mut self, action: Action) {
-        let monotonic_time = self.service.monotonic_time();
-        let time_passed = monotonic_time
-            .duration_since(self.monotonic_time)
-            .as_nanos();
-        self.monotonic_time = monotonic_time;
-
-        let prev = self.last_action_id;
-        let curr = prev.next(time_passed as u64);
-
-        self.last_action_id = curr;
+        let prev = self.update_action_id();
         self.recursion_depth += 1;
 
         let action_with_meta =
-            ActionMeta::new(curr, prev, self.recursion_depth).with_action(action);
+            ActionMeta::new(self.last_action_id, prev, self.recursion_depth).with_action(action);
 
         let mut dispatcher = Dispatcher::new();
         self.dispatch_reducer(&action_with_meta, &mut dispatcher);
@@ -247,7 +253,8 @@ where
             service: self.service.clone(),
             state: self.state.clone(),
 
-            monotonic_time: self.monotonic_time,
+            initial_monotonic_time: self.initial_monotonic_time,
+            initial_time: self.initial_time,
 
             recursion_depth: self.recursion_depth,
             last_action_id: self.last_action_id,
