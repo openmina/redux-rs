@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "fuzzing", feature(no_coverage))]
 
-#[cfg(target_arch = "wasm32")]
-mod wasm_instant;
+mod instant;
 
 mod timestamp;
 pub use timestamp::{Instant, SystemTime, Timestamp};

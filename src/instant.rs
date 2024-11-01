@@ -1,13 +1,19 @@
 use std::cell::RefCell;
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-use std::ops::{Add, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::time::Duration;
 
 use crate::SystemTime;
 
-#[derive(Debug, Copy, Clone)]
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant as InnerInstant;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_timer::Instant as InnerInstant;
+
+#[derive(Copy, Clone)]
 pub struct Instant {
-    inner: wasm_timer::Instant,
+    inner: InnerInstant,
 }
 
 impl PartialEq for Instant {
@@ -31,29 +37,23 @@ impl Ord for Instant {
 }
 
 thread_local! {
-    static INITIAL_AND_DRIFT: RefCell<Option<(SystemTime, wasm_timer::Instant, Duration)>> = RefCell::new(None);
+    static INITIAL_AND_DRIFT: RefCell<Option<(SystemTime, InnerInstant, Duration)>> = RefCell::new(None);
 }
 
 impl Instant {
     pub fn now() -> Instant {
         let inner = INITIAL_AND_DRIFT.with_borrow_mut(|initial_and_drift| {
             let (initial_sys_time, initial_monotonic, drift) = initial_and_drift
-                .get_or_insert_with(|| {
-                    (
-                        SystemTime::now(),
-                        wasm_timer::Instant::now(),
-                        Duration::ZERO,
-                    )
-                });
+                .get_or_insert_with(|| (SystemTime::now(), InnerInstant::now(), Duration::ZERO));
 
             let sys_time_passed = SystemTime::now()
                 .duration_since(*initial_sys_time)
                 .unwrap_or_default();
-            let monotonic_now = wasm_timer::Instant::now();
+            let monotonic_now = InnerInstant::now();
             let monotonic_passed = monotonic_now.duration_since(*initial_monotonic);
 
             if sys_time_passed > monotonic_passed + *drift {
-                // fix performance.now inaccuracy
+                // handling for system suspension/browser tab suspension.
                 *drift = sys_time_passed - monotonic_passed;
             }
 
@@ -91,6 +91,12 @@ impl Instant {
     }
 }
 
+impl From<InnerInstant> for Instant {
+    fn from(inner: InnerInstant) -> Self {
+        Self { inner }
+    }
+}
+
 impl Add<Duration> for Instant {
     type Output = Instant;
 
@@ -116,5 +122,23 @@ impl Sub<Instant> for Instant {
 
     fn sub(self, other: Instant) -> Duration {
         self.inner - other.inner
+    }
+}
+
+impl AddAssign<Duration> for Instant {
+    fn add_assign(&mut self, other: Duration) {
+        *self = *self + other;
+    }
+}
+
+impl SubAssign<Duration> for Instant {
+    fn sub_assign(&mut self, other: Duration) {
+        *self = *self - other;
+    }
+}
+
+impl std::fmt::Debug for Instant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner.fmt(f)
     }
 }
