@@ -1,9 +1,10 @@
 use std::time::Duration;
-#[cfg(not(target_arch = "wasm32"))]
-pub use std::time::{Instant, SystemTime};
 
-#[cfg(target_arch = "wasm32")]
-pub use crate::wasm_instant::Instant;
+pub use crate::instant::Instant;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use std::time::SystemTime;
+
 #[cfg(target_arch = "wasm32")]
 pub use wasm_timer::SystemTime;
 
