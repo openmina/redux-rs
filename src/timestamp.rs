@@ -1,5 +1,4 @@
 use std::time::Duration;
-
 pub use crate::instant::Instant;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -42,7 +41,12 @@ impl Timestamp {
     pub fn checked_sub(self, rhs: Timestamp) -> Option<Duration> {
         self.0.checked_sub(rhs.0).map(Duration::from_nanos)
     }
+
+    pub fn checked_add(self, other: u64) -> Option<Timestamp> {
+        self.0.checked_add(other).map(Timestamp)
+    }
 }
+
 
 impl From<Timestamp> for u64 {
     fn from(t: Timestamp) -> Self {
