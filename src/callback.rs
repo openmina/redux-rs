@@ -118,3 +118,20 @@ macro_rules! callback {
         $crate::_callback!($callback_name, $action_ty, $var, $typ, $body)
     };
 }
+
+mod measurement {
+    use std::borrow::Cow;
+
+    use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
+
+    use super::Callback;
+
+    impl<T> MallocSizeOf for Callback<T> {
+        fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+            match &self.fun_name {
+                Cow::Borrowed(_) => 0,
+                Cow::Owned(s) => s.size_of(ops),
+            }
+        }
+    }
+}

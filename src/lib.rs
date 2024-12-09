@@ -1,5 +1,8 @@
 #![cfg_attr(feature = "fuzzing", feature(no_coverage))]
 
+extern crate graphannis_malloc_size_of as malloc_size_of;
+extern crate graphannis_malloc_size_of_derive as malloc_size_of_derive;
+
 mod instant;
 
 mod timestamp;

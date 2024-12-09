@@ -10,6 +10,8 @@ fuzzcheck = { git = "https://github.com/openmina/fuzzcheck-rs.git", optional = t
 enum_dispatch = "0.3.7"
 linkme = { version = "0.3.22", optional = true }
 paste = "1.0.14"
+graphannis-malloc_size_of = { git = "https://github.com/openmina/graphannis-malloc_size_of.git" }
+graphannis-malloc_size_of_derive = { git = "https://github.com/openmina/graphannis-malloc_size_of_derive.git" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-timer = { git = "https://github.com/openmina/wasm-timer" }

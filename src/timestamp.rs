@@ -1,5 +1,7 @@
-use std::time::Duration;
 pub use crate::instant::Instant;
+use std::time::Duration;
+
+use malloc_size_of_derive::MallocSizeOf;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use std::time::SystemTime;
@@ -21,7 +23,7 @@ pub use wasm_timer::SystemTime;
 /// assert_eq!(u64::MAX / 1000 / 1000 / 1000 / 60 / 60 / 24 / 365, 584);
 /// ```
 #[cfg_attr(feature = "fuzzing", derive(fuzzcheck::DefaultMutator))]
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy, MallocSizeOf)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Timestamp(u64);
 
@@ -46,7 +48,6 @@ impl Timestamp {
         self.0.checked_add(other).map(Timestamp)
     }
 }
-
 
 impl From<Timestamp> for u64 {
     fn from(t: Timestamp) -> Self {
