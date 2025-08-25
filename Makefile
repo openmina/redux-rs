@@ -140,15 +140,17 @@ build-wasm: ## Build for WASM target
 
 # Build with fuzzing features
 .PHONY: build-fuzzing
-build-fuzzing: ## Build with fuzzing features
+build-fuzzing: ## Build with fuzzing features (currently broken due to fuzzcheck dependency)
 	@echo "Building with fuzzing features..."
-	@cargo build --features fuzzing
+	@echo "WARNING: Fuzzing is currently broken due to fuzzcheck dependency compatibility issues"
+	@cargo +nightly build --features fuzzing
 
 # Run fuzzing tests (if available)
 .PHONY: test-fuzzing
-test-fuzzing: ## Run fuzzing tests
+test-fuzzing: ## Run fuzzing tests (currently broken due to fuzzcheck dependency)
 	@echo "Running fuzzing tests..."
-	@cargo test --features fuzzing
+	@echo "WARNING: Fuzzing is currently broken due to fuzzcheck dependency compatibility issues"
+	@cargo +nightly test --features fuzzing
 
 # Help target
 .PHONY: help

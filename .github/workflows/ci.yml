@@ -90,9 +90,6 @@ jobs:
       - name: Test without default features
         run: cargo test --no-default-features
 
-      - name: Test with fuzzing features
-        run: make build-fuzzing
-
   wasm:
     name: WASM Build
     strategy:
