@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["redux",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.84.1/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"struct\" href=\"redux/struct.ActionId.html\" title=\"struct redux::ActionId\">ActionId</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.84.1/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"struct\" href=\"redux/struct.ActionMeta.html\" title=\"struct redux::ActionMeta\">ActionMeta</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.84.1/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"struct\" href=\"redux/struct.Timestamp.html\" title=\"struct redux::Timestamp\">Timestamp</a>"],["impl&lt;Action: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.84.1/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.84.1/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"struct\" href=\"redux/struct.ActionWithMeta.html\" title=\"struct redux::ActionWithMeta\">ActionWithMeta</a>&lt;Action&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1177]}
