@@ -130,7 +130,10 @@ check: check-format check-md check-trailing-whitespace lint test-all ## Run all 
 .PHONY: generate-doc
 generate-doc: ## Generate documentation
 	@echo "Generating documentation..."
-	@cargo doc --no-deps
+	@RUSTDOCFLAGS="-D warnings --enable-index-page -Zunstable-options" cargo +nightly doc --features serde,serializable_callbacks --no-deps --workspace
+	@echo ""
+	@echo "The documentation is available at: ./target/doc"
+	@echo ""
 
 # Build for WASM target
 .PHONY: build-wasm

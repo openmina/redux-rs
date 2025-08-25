@@ -132,12 +132,23 @@ jobs:
       - name: Setup build dependencies
         uses: o1-labs/mina-rust/.github/actions/setup-build-deps@develop
 
+      - name: Setup nightly Rust for documentation
+        uses: o1-labs/mina-rust/.github/actions/setup-rust@develop
+        with:
+          toolchain: nightly
+
       - name: Generate documentation
         run: make generate-doc
+
+      - name: Prepare documentation for deployment
+        if: github.ref == 'refs/heads/master'
+        run: |
+          mkdir -p ./docs
+          cp -r ./target/doc/* ./docs/
 
       - name: Deploy documentation
         if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/doc
+          publish_dir: ./docs
