@@ -26,6 +26,7 @@ redux = { git = "https://github.com/o1-labs/redux-rs.git" }
 ```
 
 Quick reference:
+
 ```bash
 make setup        # Setup development environment
 make check        # Run all checks (format, lint, test)
@@ -34,8 +35,11 @@ make help         # Show all available targets
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for
+details.
 
 ## Contributing
 
-Contributions are welcome! Please see our **[Contributing Guide](https://o1-labs.github.io/redux-rs/contributing/)** for details.
+Contributions are welcome! Please see our
+**[Contributing Guide](https://o1-labs.github.io/redux-rs/contributing/)** for
+details.
