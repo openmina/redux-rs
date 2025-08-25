@@ -319,10 +319,10 @@
 
 <span class="doccomment">/// Main struct for the state machine.
 ///
-/// Exposes a [Store::dispatch](redux::Store::dispatch) method, using
-/// which [Action](redux::Action) can be dispatched, which triggers a
-/// 1. [Reducer](redux::Reducer) - to update the state.
-/// 2. [Effects](redux::Effects) - to trigger side-effects of the action.
+/// Exposes a [`Store::dispatch`] method, using
+/// which actions can be dispatched, which triggers a
+/// 1. [`Reducer`] - to update the state.
+/// 2. [`Effects`] - to trigger side-effects of the action.
 </span><span class="kw">pub struct </span>Store&lt;State, Service, Action&gt; {
     reducer: Reducer&lt;State, Action&gt;,
     effects: Effects&lt;State, Service, Action&gt;,

@@ -3,11 +3,11 @@
     pub service: Service,
     <span class="comment">/* private fields */</span>
 }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Main struct for the state machine.</p>
-<p>Exposes a <a href="redux::Store::dispatch">Store::dispatch</a> method, using
-which <a href="redux::Action">Action</a> can be dispatched, which triggers a</p>
+<p>Exposes a <a href="struct.Store.html#method.dispatch" title="method redux::Store::dispatch"><code>Store::dispatch</code></a> method, using
+which actions can be dispatched, which triggers a</p>
 <ol>
-<li><a href="redux::Reducer">Reducer</a> - to update the state.</li>
-<li><a href="redux::Effects">Effects</a> - to trigger side-effects of the action.</li>
+<li><a href="type.Reducer.html" title="type redux::Reducer"><code>Reducer</code></a> - to update the state.</li>
+<li><a href="type.Effects.html" title="type redux::Effects"><code>Effects</code></a> - to trigger side-effects of the action.</li>
 </ol>
 </div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.state" class="structfield section-header"><a href="#structfield.state" class="anchor field">§</a><code>state: StateWrapper&lt;State&gt;</code></span><div class="docblock"><p>Current State.</p>
 <p>Immutable access can be gained using <code>store.state.get()</code>.
