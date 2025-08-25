@@ -56,10 +56,10 @@ pub fn monotonic_to_time(time: Option<Instant>) -> u64 {
 
 /// Main struct for the state machine.
 ///
-/// Exposes a [Store::dispatch](redux::Store::dispatch) method, using
-/// which [Action](redux::Action) can be dispatched, which triggers a
-/// 1. [Reducer](redux::Reducer) - to update the state.
-/// 2. [Effects](redux::Effects) - to trigger side-effects of the action.
+/// Exposes a [`Store::dispatch`] method, using
+/// which actions can be dispatched, which triggers a
+/// 1. [`Reducer`] - to update the state.
+/// 2. [`Effects`] - to trigger side-effects of the action.
 pub struct Store<State, Service, Action> {
     reducer: Reducer<State, Action>,
     effects: Effects<State, Service, Action>,
