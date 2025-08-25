@@ -1,7 +1,9 @@
-use std::cell::RefCell;
-use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-use std::ops::{Add, AddAssign, Sub, SubAssign};
-use std::time::Duration;
+use std::{
+    cell::RefCell,
+    cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd},
+    ops::{Add, AddAssign, Sub, SubAssign},
+    time::Duration,
+};
 
 use crate::SystemTime;
 
@@ -26,7 +28,7 @@ impl Eq for Instant {}
 
 impl PartialOrd for Instant {
     fn partial_cmp(&self, other: &Instant) -> Option<Ordering> {
-        self.inner.partial_cmp(&other.inner)
+        Some(self.cmp(other))
     }
 }
 
@@ -37,7 +39,7 @@ impl Ord for Instant {
 }
 
 thread_local! {
-    static INITIAL_AND_DRIFT: RefCell<Option<(SystemTime, InnerInstant, Duration)>> = RefCell::new(None);
+    static INITIAL_AND_DRIFT: RefCell<Option<(SystemTime, InnerInstant, Duration)>> = const { RefCell::new(None) };
 }
 
 impl Instant {

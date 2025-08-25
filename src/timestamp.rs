@@ -1,5 +1,5 @@
-use std::time::Duration;
 pub use crate::instant::Instant;
+use std::time::Duration;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use std::time::SystemTime;
@@ -46,7 +46,6 @@ impl Timestamp {
         self.0.checked_add(other).map(Timestamp)
     }
 }
-
 
 impl From<Timestamp> for u64 {
     fn from(t: Timestamp) -> Self {

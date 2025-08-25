@@ -7,6 +7,15 @@ pub struct Dispatcher<Action, State> {
     _marker: PhantomData<State>,
 }
 
+impl<Action, State> Default for Dispatcher<Action, State>
+where
+    Action: crate::EnablingCondition<State>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Action, State> Dispatcher<Action, State>
 where
     Action: crate::EnablingCondition<State>,
@@ -43,7 +52,7 @@ where
         Action: From<AnyAction>,
     {
         let action: Action = callback.call(args);
-        self.queue.push_back(action.into());
+        self.queue.push_back(action);
     }
 
     pub(crate) fn pop(&mut self) -> Option<Action> {
