@@ -25,28 +25,6 @@ of the [Mina Rust Node](https://github.com/o1-labs/mina-rust) implementation.
 redux = { git = "https://github.com/o1-labs/redux-rs.git" }
 ```
 
-## Documentation
-
-📚 **[Complete Documentation](https://o1-labs.github.io/redux-rs/)** - API reference, guides, and examples
-
-🚀 **[Quick Start Guide](https://o1-labs.github.io/redux-rs/guide/)** - Get up and running in minutes
-
-💡 **[Examples](https://o1-labs.github.io/redux-rs/examples/)** - Real-world usage patterns
-
-## Key Features
-
-- Type-safe actions with metadata and enabling conditions
-- Immutable state management with compile-time guarantees
-- Effects system for controlled side effects
-- Built-in time services (monotonic and system time)
-- Sub-stores for composable state hierarchies
-- WebAssembly support
-
-## Development
-
-For development setup, building, testing, and contributing guidelines, see the
-**[Development Guide](https://o1-labs.github.io/redux-rs/development/)**.
-
 Quick reference:
 ```bash
 make setup        # Setup development environment
