@@ -220,11 +220,52 @@
 <a href="#219" id="219">219</a>
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::OnceLock;
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::OnceLock;
 
 <span class="kw">use crate</span>::{
-    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
-    TimeService,
+    ActionId, ActionMeta, ActionWithMeta, AnyAction, Callback, Dispatcher, Effects,
+    EnablingCondition, Instant, Reducer, SubStore, SystemTime, TimeService, Timestamp,
 };
 
 <span class="doccomment">/// Wraps around State and allows only immutable borrow,
@@ -264,9 +305,11 @@
 </span><span class="kw">static </span>INITIAL_TIME: OnceLock&lt;(Instant, SystemTime)&gt; = OnceLock::new();
 
 <span class="doccomment">/// Converts monotonic time to nanoseconds since Unix epoch.
-</span><span class="kw">pub fn </span>monotonic_to_time(time: Instant) -&gt; u64 {
+///
+/// If `None` passed, returns result for current time.
+</span><span class="kw">pub fn </span>monotonic_to_time(time: <span class="prelude-ty">Option</span>&lt;Instant&gt;) -&gt; u64 {
     <span class="kw">let </span>(monotonic, system) = INITIAL_TIME.get_or_init(|| (Instant::now(), SystemTime::now()));
-    <span class="kw">let </span>time_passed = time.duration_since(<span class="kw-2">*</span>monotonic);
+    <span class="kw">let </span>time_passed = time.unwrap_or_else(Instant::now).duration_since(<span class="kw-2">*</span>monotonic);
     system
         .duration_since(SystemTime::UNIX_EPOCH)
         .map(|x| x + time_passed)
@@ -291,7 +334,8 @@
     </span><span class="kw">pub </span>state: StateWrapper&lt;State&gt;,
     <span class="kw">pub </span>service: Service,
 
-    monotonic_time: Instant,
+    initial_monotonic_time: Instant,
+    initial_time: Timestamp,
 
     <span class="doccomment">/// Current recursion depth of dispatch.
     </span>recursion_depth: u32,
@@ -302,6 +346,7 @@
 <span class="kw">impl</span>&lt;State, Service, Action&gt; Store&lt;State, Service, Action&gt;
 <span class="kw">where
     </span>Service: TimeService,
+    Action: EnablingCondition&lt;State&gt;,
 {
     <span class="doccomment">/// Creates a new store.
     </span><span class="kw">pub fn </span>new(
@@ -327,7 +372,8 @@
                 inner: initial_state,
             },
 
-            monotonic_time: initial_monotonic_time,
+            initial_monotonic_time,
+            initial_time: Timestamp::new(initial_time_nanos <span class="kw">as </span>u64),
 
             recursion_depth: <span class="number">0</span>,
             last_action_id: ActionId::new_unchecked(initial_time_nanos <span class="kw">as </span>u64),
@@ -347,7 +393,7 @@
 
     <span class="doccomment">/// Convert monotonic time to system clock in nanoseconds from epoch.
     </span><span class="kw">pub fn </span>monotonic_to_time(<span class="kw-2">&amp;</span><span class="self">self</span>, monotonic_time: Instant) -&gt; u64 {
-        monotonic_to_time(monotonic_time)
+        monotonic_to_time(<span class="prelude-val">Some</span>(monotonic_time))
     }
 
     <span class="doccomment">/// Dispatch an Action.
@@ -360,14 +406,22 @@
     <span class="kw">where
         </span>T: Into&lt;Action&gt; + EnablingCondition&lt;State&gt;,
     {
-        <span class="kw">if </span>!action.is_enabled(<span class="self">self</span>.state()) {
+        <span class="kw">if </span>!action.is_enabled(<span class="self">self</span>.state(), <span class="self">self</span>.last_action_id.into()) {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
-
         <span class="self">self</span>.dispatch_enabled(action.into());
 
         <span class="bool-val">true
     </span>}
+
+    <span class="kw">pub fn </span>dispatch_callback&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, callback: Callback&lt;T&gt;, args: T) -&gt; bool
+    <span class="kw">where
+        </span>T: <span class="lifetime">'static</span>,
+        Action: From&lt;AnyAction&gt; + EnablingCondition&lt;State&gt;,
+    {
+        <span class="kw">let </span>action: Action = callback.call(args);
+        <span class="self">self</span>.dispatch(action)
+    }
 
     <span class="doccomment">/// Dispatch an Action (For `SubStore`).
     ///
@@ -375,50 +429,77 @@
     /// to reducer and then effects.
     ///
     /// If action is not enabled, we return false and do nothing.
-    </span><span class="kw">pub fn </span>sub_dispatch&lt;SubAction, A&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action: A) -&gt; bool
+    </span><span class="kw">pub fn </span>sub_dispatch&lt;A, S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action: A) -&gt; bool
     <span class="kw">where
-        </span>A: Into&lt;SubAction&gt; + EnablingCondition&lt;State&gt;,
-        SubAction: Into&lt;Action&gt;,
+        </span>A: Into&lt;&lt;<span class="self">Self </span><span class="kw">as </span>SubStore&lt;State, S&gt;&gt;::SubAction&gt; + EnablingCondition&lt;S&gt;,
+        &lt;<span class="self">Self </span><span class="kw">as </span>SubStore&lt;State, S&gt;&gt;::SubAction: Into&lt;Action&gt;,
+        <span class="self">Self</span>: SubStore&lt;State, S&gt;,
     {
-        <span class="kw">if </span>!action.is_enabled(<span class="self">self</span>.state()) {
+        <span class="kw">if </span>!action.is_enabled(
+            &lt;<span class="self">Self </span><span class="kw">as </span>SubStore&lt;State, S&gt;&gt;::state(<span class="self">self</span>),
+            <span class="self">self</span>.last_action_id.into(),
+        ) {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
-
         <span class="self">self</span>.dispatch_enabled(action.into().into());
 
         <span class="bool-val">true
     </span>}
 
+    <span class="kw">fn </span>update_action_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; ActionId {
+        <span class="kw">let </span>prev_action_id = <span class="self">self</span>.last_action_id;
+        <span class="kw">let </span>now = <span class="self">self</span>.initial_time
+            + <span class="self">self
+                </span>.service
+                .monotonic_time()
+                .duration_since(<span class="self">self</span>.initial_monotonic_time);
+
+        <span class="kw">let </span>t = (Timestamp::from(prev_action_id) + <span class="number">1</span>).max(now);
+        <span class="self">self</span>.last_action_id = ActionId::new_unchecked(t.into());
+        prev_action_id
+    }
+
     <span class="doccomment">/// Dispatches action without checking the enabling condition.
     </span><span class="kw">fn </span>dispatch_enabled(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action: Action) {
-        <span class="kw">let </span>monotonic_time = <span class="self">self</span>.service.monotonic_time();
-        <span class="kw">let </span>time_passed = monotonic_time
-            .duration_since(<span class="self">self</span>.monotonic_time)
-            .as_nanos();
-
-        <span class="self">self</span>.monotonic_time = monotonic_time;
-        <span class="self">self</span>.last_action_id = <span class="self">self</span>.last_action_id.next(time_passed <span class="kw">as </span>u64);
-
-        <span class="kw">let </span>action_with_meta =
-            ActionMeta::new(<span class="self">self</span>.last_action_id, <span class="self">self</span>.recursion_depth).with_action(action);
+        <span class="kw">let </span>prev = <span class="self">self</span>.update_action_id();
         <span class="self">self</span>.recursion_depth += <span class="number">1</span>;
 
-        <span class="self">self</span>.dispatch_reducer(<span class="kw-2">&amp;</span>action_with_meta);
-        <span class="self">self</span>.dispatch_effects(action_with_meta);
+        <span class="kw">let </span>action_with_meta =
+            ActionMeta::new(<span class="self">self</span>.last_action_id, prev, <span class="self">self</span>.recursion_depth).with_action(action);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>dispatcher = Dispatcher::new();
+        <span class="self">self</span>.dispatch_reducer(<span class="kw-2">&amp;</span>action_with_meta, <span class="kw-2">&amp;mut </span>dispatcher);
+        <span class="self">self</span>.dispatch_effects(action_with_meta, dispatcher);
 
         <span class="self">self</span>.recursion_depth -= <span class="number">1</span>;
     }
 
     <span class="doccomment">/// Runs the reducer.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">fn </span>dispatch_reducer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action_with_id: <span class="kw-2">&amp;</span>ActionWithMeta&lt;Action&gt;) {
-        (<span class="self">self</span>.reducer)(<span class="self">self</span>.state.get_mut(), action_with_id);
+    </span><span class="kw">fn </span>dispatch_reducer(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        action_with_id: <span class="kw-2">&amp;</span>ActionWithMeta&lt;Action&gt;,
+        dispatcher: <span class="kw-2">&amp;mut </span>Dispatcher&lt;Action, State&gt;,
+    ) {
+        (<span class="self">self</span>.reducer)(<span class="self">self</span>.state.get_mut(), action_with_id, dispatcher);
     }
 
     <span class="doccomment">/// Runs the effects.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">fn </span>dispatch_effects(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action_with_id: ActionWithMeta&lt;Action&gt;) {
-        (<span class="self">self</span>.effects)(<span class="self">self</span>, action_with_id);
+    </span><span class="kw">fn </span>dispatch_effects(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        action_with_id: ActionWithMeta&lt;Action&gt;,
+        <span class="kw-2">mut </span>queued: Dispatcher&lt;Action, State&gt;,
+    ) {
+        <span class="comment">// First the effects for this specific action must be handled
+        </span>(<span class="self">self</span>.effects)(<span class="self">self</span>, action_with_id);
+
+        <span class="comment">// Then dispatch all actions enqueued by the reducer
+        </span><span class="kw">while let </span><span class="prelude-val">Some</span>(action) = queued.pop() {
+            <span class="kw">if </span>action.is_enabled(<span class="self">self</span>.state(), <span class="self">self</span>.last_action_id.into()) {
+                <span class="self">self</span>.dispatch_enabled(action);
+            }
+        }
     }
 }
 
@@ -426,7 +507,7 @@
 <span class="kw">where
     </span>State: Clone,
     Service: Clone,
-    Action: Clone,
+    Action: Clone + EnablingCondition&lt;State&gt;,
 {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -435,7 +516,8 @@
             service: <span class="self">self</span>.service.clone(),
             state: <span class="self">self</span>.state.clone(),
 
-            monotonic_time: <span class="self">self</span>.monotonic_time,
+            initial_monotonic_time: <span class="self">self</span>.initial_monotonic_time,
+            initial_time: <span class="self">self</span>.initial_time,
 
             recursion_depth: <span class="self">self</span>.recursion_depth,
             last_action_id: <span class="self">self</span>.last_action_id,

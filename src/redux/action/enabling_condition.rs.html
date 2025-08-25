@@ -6,11 +6,13 @@
 <a href="#5" id="5">5</a>
 <a href="#6" id="6">6</a>
 <a href="#7" id="7">7</a>
-<a href="#8" id="8">8</a></pre></div><pre class="rust"><code><span class="kw">pub trait </span>EnablingCondition&lt;State&gt; {
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a></pre></div><pre class="rust"><code><span class="attr">#[allow(unused_variables)]
+</span><span class="kw">pub trait </span>EnablingCondition&lt;State&gt; {
     <span class="doccomment">/// Enabling condition for the Action.
     ///
-    /// Checks if the given action is enabled for a given state.
-    </span><span class="kw">fn </span>is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="attr">#[allow(unused_variables)] </span>state: <span class="kw-2">&amp;</span>State) -&gt; bool {
+    /// Checks if the given action is enabled for a given state and timestamp.
+    </span><span class="kw">fn </span>is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;</span>State, time: <span class="kw">crate</span>::Timestamp) -&gt; bool {
         <span class="bool-val">true
     </span>}
 }

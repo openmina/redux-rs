@@ -12,7 +12,12 @@
 <a href="#11" id="11">11</a>
 <a href="#12" id="12">12</a>
 <a href="#13" id="13">13</a>
-<a href="#14" id="14">14</a></pre></div><pre class="rust"><code><span class="doccomment">/// Useful when state machine is split into multiple crates. Using this
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a></pre></div><pre class="rust"><code><span class="doccomment">/// Useful when state machine is split into multiple crates. Using this
 /// trait we can pass `Store&lt;GlobalState, Service, GlobalAction&gt;`
 /// almost as if it were `Store&lt;SubState, Service, SubAction&gt;`.
 </span><span class="kw">pub trait </span>SubStore&lt;GlobalState, SubState&gt; {
@@ -24,6 +29,11 @@
     <span class="kw">fn </span>state_and_service(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span>SubState, <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Service);
     <span class="kw">fn </span>dispatch&lt;A&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, action: A) -&gt; bool
     <span class="kw">where
-        </span>A: Into&lt;<span class="self">Self</span>::SubAction&gt; + <span class="kw">crate</span>::EnablingCondition&lt;GlobalState&gt;;
+        </span>A: Into&lt;<span class="self">Self</span>::SubAction&gt; + <span class="kw">crate</span>::EnablingCondition&lt;SubState&gt;;
+
+    <span class="kw">fn </span>dispatch_callback&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, callback: <span class="kw">crate</span>::Callback&lt;T&gt;, args: T) -&gt; bool
+    <span class="kw">where
+        </span>T: <span class="lifetime">'static</span>,
+        <span class="self">Self</span>::SubAction: From&lt;<span class="kw">crate</span>::AnyAction&gt; + <span class="kw">crate</span>::EnablingCondition&lt;SubState&gt;;
 }
 </code></pre></div></section></main></body></html>

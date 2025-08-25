@@ -69,13 +69,27 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
-<span class="attr">#[cfg(not(target_arch = <span class="string">"wasm32"</span>))]
-</span><span class="kw">pub use </span>std::time::{Instant, SystemTime};
-<span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)]
-</span><span class="kw">pub use </span>wasm_timer::{Instant, SystemTime};
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a></pre></div><pre class="rust"><code><span class="kw">pub use </span><span class="kw">crate</span>::instant::Instant;
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span><span class="kw">crate</span>::monotonic_to_time;
+<span class="attr">#[cfg(not(target_arch = <span class="string">"wasm32"</span>))]
+</span><span class="kw">pub use </span>std::time::SystemTime;
+
+<span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)]
+</span><span class="kw">pub use </span>wasm_timer::SystemTime;
 
 <span class="doccomment">/// Time in nanoseconds from [std::time::UNIX_EPOCH].
 ///
@@ -105,11 +119,15 @@
 
     <span class="attr">#[inline(always)]
     </span><span class="kw">pub fn </span>global_now() -&gt; <span class="self">Self </span>{
-        Timestamp::new(monotonic_to_time(Instant::now()))
+        <span class="self">Self</span>::new(<span class="kw">crate</span>::monotonic_to_time(<span class="prelude-val">None</span>))
     }
 
     <span class="kw">pub fn </span>checked_sub(<span class="self">self</span>, rhs: Timestamp) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
         <span class="self">self</span>.<span class="number">0</span>.checked_sub(rhs.<span class="number">0</span>).map(Duration::from_nanos)
+    }
+
+    <span class="kw">pub fn </span>checked_add(<span class="self">self</span>, other: u64) -&gt; <span class="prelude-ty">Option</span>&lt;Timestamp&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.checked_add(other).map(Timestamp)
     }
 }
 
@@ -138,6 +156,14 @@
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>add(<span class="self">self</span>, other: u64) -&gt; Timestamp {
         Timestamp(<span class="self">self</span>.<span class="number">0 </span>+ other)
+    }
+}
+
+<span class="kw">impl </span>std::ops::Add&lt;Duration&gt; <span class="kw">for </span>Timestamp {
+    <span class="kw">type </span>Output = Timestamp;
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>add(<span class="self">self</span>, other: Duration) -&gt; Timestamp {
+        Timestamp(<span class="self">self</span>.<span class="number">0 </span>+ other.as_nanos() <span class="kw">as </span>u64)
     }
 }
 </code></pre></div></section></main></body></html>
