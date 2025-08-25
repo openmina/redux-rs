@@ -18,13 +18,13 @@ setup: ## Setup development environment
 .PHONY: build
 build: ## Build the project
 	@echo "Building redux-rs..."
-	@cargo build --all-targets --all-features
+	@cargo build --all-targets
 
 # Build in release mode
 .PHONY: release
 release: ## Build in release mode
 	@echo "Building redux-rs in release mode..."
-	@cargo build --release --all-targets --all-features
+	@cargo build --release --all-targets
 
 # Clean build artifacts
 .PHONY: clean
@@ -36,13 +36,13 @@ clean: ## Clean build artifacts
 .PHONY: test
 test: ## Run tests
 	@echo "Running tests..."
-	@cargo test --all-features
+	@cargo test
 
 # Run documentation tests
 .PHONY: test-doc
 test-doc: ## Run documentation tests
 	@echo "Running documentation tests..."
-	@cargo test --doc --all-features
+	@cargo test --doc
 
 # Run all tests including documentation tests
 .PHONY: test-all
@@ -53,7 +53,7 @@ test-all: test test-doc ## Run all tests
 .PHONY: test-with-coverage
 test-with-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."
-	@cargo tarpaulin --all-features --out Html --out Lcov
+	@cargo tarpaulin --out Html --out Lcov
 
 # Check code formatting
 .PHONY: check-format
@@ -119,7 +119,7 @@ check-trailing-whitespace: ## Check for trailing whitespaces in source files
 .PHONY: lint
 lint: ## Run clippy linting
 	@echo "Running clippy linting..."
-	@cargo clippy --all-targets --all-features -- -D warnings
+	@cargo clippy --all-targets -- -D warnings
 
 # Check everything (format, lint, test)
 .PHONY: check
@@ -130,13 +130,13 @@ check: check-format check-md check-trailing-whitespace lint test-all ## Run all 
 .PHONY: generate-doc
 generate-doc: ## Generate documentation
 	@echo "Generating documentation..."
-	@cargo doc --all-features --no-deps
+	@cargo doc --no-deps
 
 # Build for WASM target
 .PHONY: build-wasm
 build-wasm: ## Build for WASM target
 	@echo "Building for WASM target..."
-	@cargo build --target wasm32-unknown-unknown --all-features
+	@cargo build --target wasm32-unknown-unknown
 
 # Build with fuzzing features
 .PHONY: build-fuzzing
