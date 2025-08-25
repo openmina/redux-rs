@@ -1,4 +1,4 @@
-# Redux-RS
+# redux-rs
 
 [![Rust 1.84](https://img.shields.io/badge/rust-1.84-blue.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -13,7 +13,7 @@ optimized for performance and type safety.
 
 ## Overview
 
-Redux-RS provides a lightweight, type-safe implementation of the Redux pattern
+`redux-rs` provides a lightweight, type-safe implementation of the Redux pattern
 in Rust. It enables predictable state management through unidirectional data
 flow, with support for effects, services, and sub-stores. This library is part
 of the [Mina Rust Node](https://github.com/o1-labs/mina-rust) implementation.
