@@ -8,7 +8,7 @@ optimized for performance and type safety.
 
 > **Note**: This is NOT a fork of
 > [redux-rs/redux-rs](https://github.com/redux-rs/redux-rs). This is an
-> independent implementation designed specifically for the OpenMina ecosystem.
+> independent implementation designed specifically for the Mina Rust node.
 
 ## Overview
 
