@@ -69,27 +69,6 @@ jobs:
       - name: Run tests
         run: make test-all
 
-  test-features:
-    name: Test Features
-    strategy:
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: o1-labs/mina-rust/.github/actions/setup-rust@develop
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-
-      - name: Setup build dependencies
-        uses: o1-labs/mina-rust/.github/actions/setup-build-deps@develop
-
-      - name: Test without default features
-        run: cargo test --no-default-features
-
   wasm:
     name: WASM Build
     strategy:

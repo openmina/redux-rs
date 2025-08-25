@@ -28,6 +28,7 @@ impl ActionId {
         Self(Timestamp::new(value))
     }
 
+    #[allow(unused)]
     #[inline(always)]
     pub(crate) fn next(&self, time_passed: u64) -> Self {
         Self(self.0 + time_passed.max(1))

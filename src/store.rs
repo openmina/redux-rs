@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use crate::{
-    ActionId, ActionMeta, ActionWithMeta, Effects, EnablingCondition, Instant, Reducer, SystemTime,
-    TimeService,
+    ActionId, ActionMeta, ActionWithMeta, AnyAction, Callback, Dispatcher, Effects,
+    EnablingCondition, Instant, Reducer, SubStore, SystemTime, TimeService, Timestamp,
 };
 
 /// Wraps around State and allows only immutable borrow,
@@ -42,9 +42,11 @@ impl<T: Clone> Clone for StateWrapper<T> {
 static INITIAL_TIME: OnceLock<(Instant, SystemTime)> = OnceLock::new();
 
 /// Converts monotonic time to nanoseconds since Unix epoch.
-pub fn monotonic_to_time(time: Instant) -> u64 {
+///
+/// If `None` passed, returns result for current time.
+pub fn monotonic_to_time(time: Option<Instant>) -> u64 {
     let (monotonic, system) = INITIAL_TIME.get_or_init(|| (Instant::now(), SystemTime::now()));
-    let time_passed = time.duration_since(*monotonic);
+    let time_passed = time.unwrap_or_else(Instant::now).duration_since(*monotonic);
     system
         .duration_since(SystemTime::UNIX_EPOCH)
         .map(|x| x + time_passed)
@@ -69,7 +71,8 @@ pub struct Store<State, Service, Action> {
     pub state: StateWrapper<State>,
     pub service: Service,
 
-    monotonic_time: Instant,
+    initial_monotonic_time: Instant,
+    initial_time: Timestamp,
 
     /// Current recursion depth of dispatch.
     recursion_depth: u32,
@@ -80,6 +83,7 @@ pub struct Store<State, Service, Action> {
 impl<State, Service, Action> Store<State, Service, Action>
 where
     Service: TimeService,
+    Action: EnablingCondition<State>,
 {
     /// Creates a new store.
     pub fn new(
@@ -105,7 +109,8 @@ where
                 inner: initial_state,
             },
 
-            monotonic_time: initial_monotonic_time,
+            initial_monotonic_time,
+            initial_time: Timestamp::new(initial_time_nanos as u64),
 
             recursion_depth: 0,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
@@ -125,7 +130,7 @@ where
 
     /// Convert monotonic time to system clock in nanoseconds from epoch.
     pub fn monotonic_to_time(&self, monotonic_time: Instant) -> u64 {
-        monotonic_to_time(monotonic_time)
+        monotonic_to_time(Some(monotonic_time))
     }
 
     /// Dispatch an Action.
@@ -138,13 +143,21 @@ where
     where
         T: Into<Action> + EnablingCondition<State>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled(self.state(), self.last_action_id.into()) {
             return false;
         }
-
         self.dispatch_enabled(action.into());
 
         true
+    }
+
+    pub fn dispatch_callback<T>(&mut self, callback: Callback<T>, args: T) -> bool
+    where
+        T: 'static,
+        Action: From<AnyAction> + EnablingCondition<State>,
+    {
+        let action: Action = callback.call(args);
+        self.dispatch(action)
     }
 
     /// Dispatch an Action (For `SubStore`).
@@ -153,50 +166,77 @@ where
     /// to reducer and then effects.
     ///
     /// If action is not enabled, we return false and do nothing.
-    pub fn sub_dispatch<SubAction, A>(&mut self, action: A) -> bool
+    pub fn sub_dispatch<A, S>(&mut self, action: A) -> bool
     where
-        A: Into<SubAction> + EnablingCondition<State>,
-        SubAction: Into<Action>,
+        A: Into<<Self as SubStore<State, S>>::SubAction> + EnablingCondition<S>,
+        <Self as SubStore<State, S>>::SubAction: Into<Action>,
+        Self: SubStore<State, S>,
     {
-        if !action.is_enabled(self.state()) {
+        if !action.is_enabled(
+            <Self as SubStore<State, S>>::state(self),
+            self.last_action_id.into(),
+        ) {
             return false;
         }
-
         self.dispatch_enabled(action.into().into());
 
         true
     }
 
+    fn update_action_id(&mut self) -> ActionId {
+        let prev_action_id = self.last_action_id;
+        let now = self.initial_time
+            + self
+                .service
+                .monotonic_time()
+                .duration_since(self.initial_monotonic_time);
+
+        let t = (Timestamp::from(prev_action_id) + 1).max(now);
+        self.last_action_id = ActionId::new_unchecked(t.into());
+        prev_action_id
+    }
+
     /// Dispatches action without checking the enabling condition.
     fn dispatch_enabled(&mut self, action: Action) {
-        let monotonic_time = self.service.monotonic_time();
-        let time_passed = monotonic_time
-            .duration_since(self.monotonic_time)
-            .as_nanos();
-
-        self.monotonic_time = monotonic_time;
-        self.last_action_id = self.last_action_id.next(time_passed as u64);
-
-        let action_with_meta =
-            ActionMeta::new(self.last_action_id, self.recursion_depth).with_action(action);
+        let prev = self.update_action_id();
         self.recursion_depth += 1;
 
-        self.dispatch_reducer(&action_with_meta);
-        self.dispatch_effects(action_with_meta);
+        let action_with_meta =
+            ActionMeta::new(self.last_action_id, prev, self.recursion_depth).with_action(action);
+
+        let mut dispatcher = Dispatcher::new();
+        self.dispatch_reducer(&action_with_meta, &mut dispatcher);
+        self.dispatch_effects(action_with_meta, dispatcher);
 
         self.recursion_depth -= 1;
     }
 
     /// Runs the reducer.
     #[inline(always)]
-    fn dispatch_reducer(&mut self, action_with_id: &ActionWithMeta<Action>) {
-        (self.reducer)(self.state.get_mut(), action_with_id);
+    fn dispatch_reducer(
+        &mut self,
+        action_with_id: &ActionWithMeta<Action>,
+        dispatcher: &mut Dispatcher<Action, State>,
+    ) {
+        (self.reducer)(self.state.get_mut(), action_with_id, dispatcher);
     }
 
     /// Runs the effects.
     #[inline(always)]
-    fn dispatch_effects(&mut self, action_with_id: ActionWithMeta<Action>) {
+    fn dispatch_effects(
+        &mut self,
+        action_with_id: ActionWithMeta<Action>,
+        mut queued: Dispatcher<Action, State>,
+    ) {
+        // First the effects for this specific action must be handled
         (self.effects)(self, action_with_id);
+
+        // Then dispatch all actions enqueued by the reducer
+        while let Some(action) = queued.pop() {
+            if action.is_enabled(self.state(), self.last_action_id.into()) {
+                self.dispatch_enabled(action);
+            }
+        }
     }
 }
 
@@ -204,7 +244,7 @@ impl<State, Service, Action> Clone for Store<State, Service, Action>
 where
     State: Clone,
     Service: Clone,
-    Action: Clone,
+    Action: Clone + EnablingCondition<State>,
 {
     fn clone(&self) -> Self {
         Self {
@@ -213,7 +253,8 @@ where
             service: self.service.clone(),
             state: self.state.clone(),
 
-            monotonic_time: self.monotonic_time,
+            initial_monotonic_time: self.initial_monotonic_time,
+            initial_time: self.initial_time,
 
             recursion_depth: self.recursion_depth,
             last_action_id: self.last_action_id,

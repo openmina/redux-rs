@@ -1,10 +1,11 @@
+pub use crate::instant::Instant;
 use std::time::Duration;
-#[cfg(not(target_arch = "wasm32"))]
-pub use std::time::{Instant, SystemTime};
-#[cfg(target_arch = "wasm32")]
-pub use wasm_timer::{Instant, SystemTime};
 
-use crate::monotonic_to_time;
+#[cfg(not(target_arch = "wasm32"))]
+pub use std::time::SystemTime;
+
+#[cfg(target_arch = "wasm32")]
+pub use wasm_timer::SystemTime;
 
 /// Time in nanoseconds from [std::time::UNIX_EPOCH].
 ///
@@ -34,11 +35,15 @@ impl Timestamp {
 
     #[inline(always)]
     pub fn global_now() -> Self {
-        Timestamp::new(monotonic_to_time(Instant::now()))
+        Self::new(crate::monotonic_to_time(None))
     }
 
     pub fn checked_sub(self, rhs: Timestamp) -> Option<Duration> {
         self.0.checked_sub(rhs.0).map(Duration::from_nanos)
+    }
+
+    pub fn checked_add(self, other: u64) -> Option<Timestamp> {
+        self.0.checked_add(other).map(Timestamp)
     }
 }
 
@@ -67,5 +72,13 @@ impl std::ops::Add<u64> for Timestamp {
     #[inline]
     fn add(self, other: u64) -> Timestamp {
         Timestamp(self.0 + other)
+    }
+}
+
+impl std::ops::Add<Duration> for Timestamp {
+    type Output = Timestamp;
+    #[inline]
+    fn add(self, other: Duration) -> Timestamp {
+        Timestamp(self.0 + other.as_nanos() as u64)
     }
 }
