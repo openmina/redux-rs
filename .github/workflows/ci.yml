@@ -27,7 +27,7 @@ jobs:
         uses: o1-labs/mina-rust/.github/actions/setup-build-deps@develop
 
       - name: Setup Node.js for prettier
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
